@@ -121,7 +121,6 @@ public class StudentJournal extends JFrame {
 
             if (choice == JOptionPane.YES_OPTION) {
                 saveEntry();
-                // Check if save was successful before closing.
                 // A simple check is to see if the text area is now empty.
                 if (entryTextArea.getText().trim().isEmpty()) {
                      System.exit(0);
