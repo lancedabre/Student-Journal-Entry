@@ -1,140 +1,175 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+import javax.swing.event.*;
 
+public class Test {
 
-public class StudentJournal extends JFrame {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            if (showLoginDialog()) {
+                createMainApplication();
+            } else {
+                System.exit(0);
+            }
+        });
+    }
 
-    // GUI Components
-    private JTextArea entryTextArea;
-    private JButton saveButton;
-    private JLabel statusLabel;
+    private static boolean showLoginDialog() {
+        JDialog loginDialog = new JDialog((JFrame) null, "Login", true);
+        loginDialog.setSize(350, 250);
+        loginDialog.setLocationRelativeTo(null);
+        loginDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
-    // --- NEW: Database Manager ---
-    private DatabaseManager dbManager;
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
 
-    public StudentJournal() {
-        // --- Initialize Database Manager ---
-        dbManager = new DatabaseManager();
+        // Username
+        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.WEST;
+        panel.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        JTextField usernameField = new JTextField(15);
+        panel.add(usernameField, gbc);
 
-        // --- Frame Setup ---
-        setTitle("Student Daily Journal");
-        setSize(600, 450);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
+        // Password
+        gbc.gridx = 0; gbc.gridy = 1; gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        JPasswordField passwordField = new JPasswordField(15);
+        panel.add(passwordField, gbc);
 
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                handleExit();
+        // Gender
+        gbc.gridx = 0; gbc.gridy = 2; gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("Gender:"), gbc);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        String[] genders = {"Select Gender", "Male", "Female", "Other", "Prefer not to say"};
+        JComboBox<String> genderCombo = new JComboBox<>(genders);
+        panel.add(genderCombo, gbc);
+
+        // Remember Me
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        JCheckBox rememberCheckbox = new JCheckBox("Remember me");
+        panel.add(rememberCheckbox, gbc);
+
+        // Buttons
+        JButton loginButton = new JButton("Login");
+        JButton cancelButton = new JButton("Cancel");
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(loginButton);
+        buttonPanel.add(cancelButton);
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        panel.add(buttonPanel, gbc);
+
+        loginDialog.add(panel);
+
+        final boolean[] loginSuccess = {false};
+
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText().trim();
+            String password = new String(passwordField.getPassword());
+
+            if (username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(loginDialog, "Enter username & password");
+            } else if (genderCombo.getSelectedIndex() == 0) {
+                JOptionPane.showMessageDialog(loginDialog, "Select gender");
+            } else {
+                loginSuccess[0] = true;
+                JOptionPane.showMessageDialog(loginDialog, "Welcome " + username + "!");
+                loginDialog.dispose();
             }
         });
 
-        createMenuBar();
+        cancelButton.addActionListener(e -> loginDialog.dispose());
 
-        // --- Component Creation ---
-        JLabel titleLabel = new JLabel("My Academic Log", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Serif", Font.BOLD, 24));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        passwordField.addActionListener(e -> loginButton.doClick());
 
-        entryTextArea = new JTextArea();
-        entryTextArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        entryTextArea.setLineWrap(true);
-        entryTextArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(entryTextArea);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Today's Entry:"));
+        loginDialog.setVisible(true);
 
-        saveButton = new JButton("Save to Database");
-        saveButton.setFont(new Font("SansSerif", Font.BOLD, 16));
-
-        statusLabel = new JLabel("Ready. Write your thoughts and click save.", SwingConstants.CENTER);
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(saveButton);
-
-        // --- Add Components to Frame ---
-        add(titleLabel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(buttonPanel, BorderLayout.CENTER);
-        bottomPanel.add(statusLabel, BorderLayout.SOUTH);
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        // --- Add Action Listener for Save Button ---
-        saveButton.addActionListener(e -> saveEntry());
+        return loginSuccess[0];
     }
 
-    private void createMenuBar() {
+    private static void createMainApplication() {
+        JFrame frame = new JFrame("Journal Entry");
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.setSize(600, 400);
+        frame.setLocationRelativeTo(null);
+
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
-        JMenuItem saveMenuItem = new JMenuItem("Save Entry");
-        saveMenuItem.addActionListener(e -> saveEntry());
-        JMenuItem exitMenuItem = new JMenuItem("Exit");
-        exitMenuItem.addActionListener(e -> handleExit());
-        
-        fileMenu.add(saveMenuItem);
+
+        JMenuItem openItem = new JMenuItem("Open");
+        JMenuItem saveItem = new JMenuItem("Save");
+        JMenuItem exitItem = new JMenuItem("Exit");
+
+        fileMenu.add(openItem);
+        fileMenu.add(saveItem);
         fileMenu.addSeparator();
-        fileMenu.add(exitMenuItem);
+        fileMenu.add(exitItem);
         menuBar.add(fileMenu);
-        setJMenuBar(menuBar);
-    }
 
-    /**
-     * Gets text from the text area and uses the DatabaseManager to save it.
-     */
-    private void saveEntry() {
-        String entryText = entryTextArea.getText();
+        frame.setJMenuBar(menuBar);
 
-        if (entryText.trim().isEmpty()) {
-            statusLabel.setText("Cannot save an empty entry!");
-            statusLabel.setForeground(Color.RED);
-            return;
-        }
+        JTextArea textArea = new JTextArea(15, 30);
+        textArea.setLineWrap(true);
+        JScrollPane textScroll = new JScrollPane(textArea);
 
-        // --- UPDATED: Use the DatabaseManager to save ---
-        boolean success = dbManager.saveEntry(entryText);
+        JButton addButton = new JButton("Add to Explorer");
 
-        if (success) {
-            statusLabel.setText("Entry saved successfully to the database!");
-            statusLabel.setForeground(new Color(0, 128, 0)); // Dark Green
-            entryTextArea.setText(""); // Clear the text area after saving
-        } else {
-            statusLabel.setText("Error: Could not save entry to the database.");
-            statusLabel.setForeground(Color.RED);
-            // The specific error is printed to the console by the DatabaseManager
-        }
-    }
+        DefaultListModel<String> model = new DefaultListModel<>();
+        JList<String> list = new JList<>(model);
+        JScrollPane listScroll = new JScrollPane(list);
 
-    private void handleExit() {
-        if (!entryTextArea.getText().trim().isEmpty()) {
-            int choice = JOptionPane.showConfirmDialog(
-                this, 
-                "You have an unsaved entry. Do you want to save it before exiting?", 
-                "Confirm Exit", 
-                JOptionPane.YES_NO_CANCEL_OPTION, 
-                JOptionPane.QUESTION_MESSAGE
-            );
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Explorer", listScroll);
 
-            if (choice == JOptionPane.YES_OPTION) {
-                saveEntry();
-                // A simple check is to see if the text area is now empty.
-                if (entryTextArea.getText().trim().isEmpty()) {
-                     System.exit(0);
-                }
-            } else if (choice == JOptionPane.NO_OPTION) {
-                System.exit(0);
+        addButton.addActionListener(e -> {
+            String text = textArea.getText().trim();
+            if (!text.isEmpty()) {
+                model.addElement(text);
+                textArea.setText("");
             }
-        } else {
-            System.exit(0);
-        }
-    }
+        });
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new StudentJournal().setVisible(true));
+        list.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                String selected = list.getSelectedValue();
+                if (selected != null) textArea.setText(selected);
+            }
+        });
+
+        saveItem.addActionListener(e -> {
+            System.out.println("Saving...");
+            for (int i = 0; i < model.size(); i++)
+                System.out.println(model.get(i));
+            JOptionPane.showMessageDialog(frame, "Saved!");
+        });
+
+        openItem.addActionListener(e ->
+                JOptionPane.showMessageDialog(frame, "Open not implemented.")
+        );
+
+        exitItem.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(frame, "Save before exit?");
+            if (confirm == JOptionPane.YES_OPTION) System.exit(0);
+        });
+
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.add(textScroll, BorderLayout.CENTER);
+        rightPanel.add(addButton, BorderLayout.SOUTH);
+
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tabs, rightPanel);
+        split.setDividerLocation(200);
+
+        frame.add(split);
+
+        frame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                int confirm = JOptionPane.showConfirmDialog(frame, "Save before exit?");
+                if (confirm == JOptionPane.YES_OPTION) frame.dispose();
+            }
+        });
+
+        frame.setVisible(true);
     }
 }
-
